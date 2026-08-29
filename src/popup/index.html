@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Recall</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <span class="brain">🧠</span>
+        <h1>Recall</h1>
+      </header>
+
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Search your memory…"
+      />
+
+      <section id="results" aria-live="polite">
+        <p class="hint">Type to search, or save the current page below.</p>
+      </section>
+
+      <footer>
+        <button id="save-btn">📄 Remember this page</button>
+      </footer>
+    </div>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>
