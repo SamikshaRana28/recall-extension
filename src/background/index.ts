@@ -1,4 +1,5 @@
 import { saveMemory, makeId, type Memory } from "../lib/db";
+import { embedText } from "../lib/embeddings";
 
 const CONTEXT_MENU_ID = "recall-remember-page";
 
@@ -40,7 +41,14 @@ async function savePage(tabId: number): Promise<void> {
 
   // NOTE: Phase 3 will run this content through a privacy filter
   // (strip emails/phones/tokens) before it ever gets embedded or stored.
-  // Phase 2 will attach a real embedding here via Transformers.js.
+
+  // Generate the embedding right here, before saving. This is the
+  // AI step: the page's text gets converted into a 384-number vector
+  // that captures its meaning — entirely inside the browser.
+  const embedding = await embedText(
+    `${extracted.title}\n\n${extracted.content}`
+  );
+
   const memory: Memory = {
     id: makeId(),
     title: extracted.title,
@@ -48,6 +56,7 @@ async function savePage(tabId: number): Promise<void> {
     content: extracted.content,
     tags: [],
     timestamp: Date.now(),
+    embedding,
   };
 
   await saveMemory(memory);

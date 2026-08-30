@@ -1,4 +1,5 @@
 import { getAllMemories, type Memory } from "../lib/db";
+import { embedText, cosineSimilarity } from "../lib/embeddings";
 
 const searchInput = document.querySelector<HTMLInputElement>("#search-input")!;
 const resultsEl = document.querySelector<HTMLElement>("#results")!;
@@ -36,13 +37,26 @@ function escapeHtml(str: string) {
 
 async function loadRecent() {
   const memories = await getAllMemories();
-  // Most recent first. Real semantic ranking lands in Phase 2.
   memories.sort((a, b) => b.timestamp - a.timestamp);
   renderMemories(memories.slice(0, 10));
 }
 
-searchInput.addEventListener("input", async () => {
-  const query = searchInput.value.trim().toLowerCase();
+// Minimum similarity score to count as a "relevant" result.
+// Tune this if results feel too strict or too loose.
+const SIMILARITY_THRESHOLD = 0.35;
+
+let searchDebounceTimer: number | undefined;
+
+searchInput.addEventListener("input", () => {
+  // Debounce: wait 300ms after the user stops typing before running the
+  // (relatively expensive) embedding + search. Avoids re-running the AI
+  // model on every single keystroke.
+  window.clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = window.setTimeout(runSearch, 300);
+});
+
+async function runSearch() {
+  const query = searchInput.value.trim();
   const memories = await getAllMemories();
 
   if (!query) {
@@ -51,15 +65,21 @@ searchInput.addEventListener("input", async () => {
     return;
   }
 
-  // TEMP: naive substring match. Gets replaced by embedding
-  // similarity search once Transformers.js lands in Phase 2.
-  const filtered = memories.filter(
-    (m) =>
-      m.title.toLowerCase().includes(query) ||
-      m.content.toLowerCase().includes(query)
-  );
-  renderMemories(filtered);
-});
+  resultsEl.innerHTML = `<p class="hint">Searching…</p>`;
+
+  const queryEmbedding = await embedText(query);
+
+  const scored = memories
+    .filter((m) => m.embedding) // skip any memory saved before embeddings existed
+    .map((m) => ({
+      memory: m,
+      score: cosineSimilarity(queryEmbedding, m.embedding!),
+    }))
+    .filter((s) => s.score >= SIMILARITY_THRESHOLD)
+    .sort((a, b) => b.score - a.score);
+
+  renderMemories(scored.map((s) => s.memory));
+}
 
 saveBtn.addEventListener("click", async () => {
   saveBtn.disabled = true;
