@@ -254,3 +254,33 @@ footer {
   background: #3a3d44;
   cursor: default;
 }
+
+
+.memory-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px;
+  color: #8a8f98;
+  flex-shrink: 0;
+}
+
+.star-btn.starred {
+  color: #ffd166;
+}
+
+.star-btn:hover {
+  transform: scale(1.15);
+}
+
+.memory-text {
+  flex: 1;
+  min-width: 0;
+}
